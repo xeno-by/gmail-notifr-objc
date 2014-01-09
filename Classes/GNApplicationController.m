@@ -408,13 +408,16 @@ const NSUInteger DEFAULT_ACCOUNT_SUBMENU_COUNT  = 4;
 }
 
 - (void)updateMenuBarCount:(NSNotification *)notification {
+    NSInteger messageCount = [self hasErrors] ? -1 : [self messageCount];
+    NSString* logMessage = [NSString stringWithFormat:@"%ld", messageCount];
+    NSString* logPath = [[[NSProcessInfo processInfo]environment]objectForKey:@"GOOGLEMAIL_STATUS"];
+    [logMessage writeToFile:logPath atomically:YES encoding:NSUTF8StringEncoding error:nil];
+    
     if ([self hasErrors]) {
         [_statusItem setToolTip:@""];
         [_statusItem setImage:_errorIcon];
         [_statusItem setAlternateImage:_errorAltIcon];
     } else {
-        NSUInteger messageCount = [self messageCount];
-        
         if (messageCount > 0 && [GNPreferences sharedInstance].showUnreadCount) {
             [_statusItem setTitle:[NSString stringWithFormat:@"%lu", messageCount]];
         } else {
