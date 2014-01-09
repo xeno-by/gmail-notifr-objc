@@ -37,6 +37,7 @@
     NSImage *_checkIcon;
     NSImage *_checkAltIcon;
     NSImage *_errorIcon;
+    NSImage *_errorAltIcon;
 
     NSMutableArray *_checkers;
 }
@@ -169,6 +170,7 @@
     _checkIcon      = [NSImage imageNamed:@"check"];
     _checkAltIcon   = [NSImage imageNamed:@"check_a"];
     _errorIcon      = [NSImage imageNamed:@"error"];
+    _errorAltIcon   = [NSImage imageNamed:@"error_a"];
 }
 
 - (void)registerObservers {
@@ -273,6 +275,14 @@
     }
 
     return nil;
+}
+
+- (BOOL)hasErrors {
+    for (GNChecker *checker in _checkers) {
+        if ([checker hasConnectionError] || [checker hasUserError]) return YES;
+    }
+    
+    return NO;
 }
 
 - (NSUInteger)messageCount {
@@ -398,35 +408,41 @@ const NSUInteger DEFAULT_ACCOUNT_SUBMENU_COUNT  = 4;
 }
 
 - (void)updateMenuBarCount:(NSNotification *)notification {
-    NSUInteger messageCount = [self messageCount];
-
-    if (messageCount > 0 && [GNPreferences sharedInstance].showUnreadCount) {
-        [_statusItem setTitle:[NSString stringWithFormat:@"%lu", messageCount]];
-    } else {
-        [_statusItem setTitle:@""];
-    }
-
-    if (messageCount > 0) {
-        NSString *toolTipFormat = messageCount == 1 ? NSLocalizedString(@"Unread Message", nil) : NSLocalizedString(@"Unread Messages", nil);
-#warning This is duplication. See GNChecker#processResult
-        if ([[[NSLocale currentLocale] objectForKey:NSLocaleLanguageCode] isEqualToString:@"ru"]) {
-            NSUInteger count = messageCount % 100;
-            if ((count % 10 > 4) || (count % 10 == 0) || ((count > 10) && (count < 15))) {
-                toolTipFormat = NSLocalizedString(@"Unread Messages", nil);
-            } else if (count % 10 == 1) {
-                toolTipFormat = NSLocalizedString(@"Unread Message", nil);
-            } else {
-                toolTipFormat = NSLocalizedString(@"Unread Messages 2", nil);
-            }
-        }
-
-        [_statusItem setToolTip:[NSString stringWithFormat:toolTipFormat, messageCount]];
-        [_statusItem setImage:_mailIcon];
-        [_statusItem setAlternateImage:_mailAltIcon];
-    } else {
+    if ([self hasErrors]) {
         [_statusItem setToolTip:@""];
-        [_statusItem setImage:_appIcon];
-        [_statusItem setAlternateImage:_appAltIcon];
+        [_statusItem setImage:_errorIcon];
+        [_statusItem setAlternateImage:_errorAltIcon];
+    } else {
+        NSUInteger messageCount = [self messageCount];
+        
+        if (messageCount > 0 && [GNPreferences sharedInstance].showUnreadCount) {
+            [_statusItem setTitle:[NSString stringWithFormat:@"%lu", messageCount]];
+        } else {
+            [_statusItem setTitle:@""];
+        }
+        
+        if (messageCount > 0) {
+            NSString *toolTipFormat = messageCount == 1 ? NSLocalizedString(@"Unread Message", nil) : NSLocalizedString(@"Unread Messages", nil);
+#warning This is duplication. See GNChecker#processResult
+            if ([[[NSLocale currentLocale] objectForKey:NSLocaleLanguageCode] isEqualToString:@"ru"]) {
+                NSUInteger count = messageCount % 100;
+                if ((count % 10 > 4) || (count % 10 == 0) || ((count > 10) && (count < 15))) {
+                    toolTipFormat = NSLocalizedString(@"Unread Messages", nil);
+                } else if (count % 10 == 1) {
+                    toolTipFormat = NSLocalizedString(@"Unread Message", nil);
+                } else {
+                    toolTipFormat = NSLocalizedString(@"Unread Messages 2", nil);
+                }
+            }
+            
+            [_statusItem setToolTip:[NSString stringWithFormat:toolTipFormat, messageCount]];
+            [_statusItem setImage:_mailIcon];
+            [_statusItem setAlternateImage:_mailAltIcon];
+        } else {
+            [_statusItem setToolTip:@""];
+            [_statusItem setImage:_appIcon];
+            [_statusItem setAlternateImage:_appAltIcon];
+        }
     }
 }
 
